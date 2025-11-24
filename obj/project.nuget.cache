@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "dgSpecHash": "WqIx131ECFc=",
+  "success": true,
+  "projectFilePath": "D:\\24. C# Study\\7. ColorIC Inspector\\ColorIC Inspector\\ColorIC Inspector.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\kithu\\.nuget\\packages\\basler.pylon.net.x64\\10.3.2.636\\basler.pylon.net.x64.10.3.2.636.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\microsoft.ml.onnxruntime.managed\\1.23.2\\microsoft.ml.onnxruntime.managed.1.23.2.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\microsoft.win32.systemevents\\8.0.0\\microsoft.win32.systemevents.8.0.0.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\opencvsharp4\\4.11.0.20250507\\opencvsharp4.4.11.0.20250507.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\opencvsharp4.runtime.win\\4.11.0.20250507\\opencvsharp4.runtime.win.4.11.0.20250507.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\opencvsharp4.windows\\4.11.0.20250507\\opencvsharp4.windows.4.11.0.20250507.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\opencvsharp4.wpfextensions\\4.11.0.20250507\\opencvsharp4.wpfextensions.4.11.0.20250507.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\system.drawing.common\\8.0.11\\system.drawing.common.8.0.11.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\system.memory\\4.6.3\\system.memory.4.6.3.nupkg.sha512",
+    "C:\\Users\\kithu\\.nuget\\packages\\system.numerics.tensors\\9.0.0\\system.numerics.tensors.9.0.0.nupkg.sha512"
+  ],
+  "logs": []
+}

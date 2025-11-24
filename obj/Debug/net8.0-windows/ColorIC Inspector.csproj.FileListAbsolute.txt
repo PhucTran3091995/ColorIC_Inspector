@@ -1,0 +1,34 @@
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.csproj.AssemblyReference.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\MainWindow.baml
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\SettingTabs.baml
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\MainWindow.g.cs
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\SettingTabs.g.cs
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\App.g.cs
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector_MarkupCompile.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.g.resources
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.GeneratedMSBuildEditorConfig.editorconfig
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.AssemblyInfoInputs.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.AssemblyInfo.cs
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.csproj.CoreCompileInputs.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\ColorIC Inspector.exe
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\ColorIC Inspector.deps.json
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\ColorIC Inspector.runtimeconfig.json
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\ColorIC Inspector.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\ColorIC Inspector.pdb
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\Basler.Pylon.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\PylonC.NET.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\Microsoft.ML.OnnxRuntime.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\OpenCvSharp.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\OpenCvSharp.WpfExtensions.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\System.Drawing.Common.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\System.Numerics.Tensors.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\runtimes\win-x64\native\OpenCvSharpExtern.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\runtimes\win-x64\native\opencv_videoio_ffmpeg4110_64.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\runtimes\win-x86\native\OpenCvSharpExtern.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\runtimes\win-x86\native\opencv_videoio_ffmpeg4110.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC .E5CFF504.Up2Date
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\refint\ColorIC Inspector.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.pdb
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ColorIC Inspector.genruntimeconfig.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\ref\ColorIC Inspector.dll

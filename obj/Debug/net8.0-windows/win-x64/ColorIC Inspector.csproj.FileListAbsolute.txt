@@ -1,0 +1,74 @@
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\ColorIC Inspector.exe
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\ColorIC Inspector.deps.json
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\ColorIC Inspector.runtimeconfig.json
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\ColorIC Inspector.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\ColorIC Inspector.pdb
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Azure.Core.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Azure.Identity.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Bcl.AsyncInterfaces.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Bcl.Cryptography.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Data.SqlClient.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Extensions.Caching.Abstractions.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Extensions.Caching.Memory.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Extensions.DependencyInjection.Abstractions.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Extensions.Logging.Abstractions.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Extensions.Options.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Extensions.Primitives.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Identity.Client.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Identity.Client.Extensions.Msal.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.IdentityModel.Abstractions.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.IdentityModel.Logging.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.IdentityModel.Protocols.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.IdentityModel.Tokens.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.ML.OnnxRuntime.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.SqlServer.Server.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\OpenCvSharp.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\OpenCvSharp.WpfExtensions.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\System.ClientModel.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\System.Configuration.ConfigurationManager.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\System.Diagnostics.EventLog.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\System.Drawing.Common.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\System.IdentityModel.Tokens.Jwt.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\System.Memory.Data.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\System.Numerics.Tensors.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\System.Security.Cryptography.Pkcs.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\YamlDotNet.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\cs\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\de\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\es\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\fr\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\it\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\ja\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\ko\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\pl\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\pt-BR\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\ru\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\tr\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\zh-Hans\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\zh-Hant\Microsoft.Data.SqlClient.resources.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Microsoft.Data.SqlClient.SNI.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\OpenCvSharpExtern.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\opencv_videoio_ffmpeg4110_64.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Basler.Pylon.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\bin\Debug\net8.0-windows\win-x64\Basler.Pylon.xml
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.csproj.AssemblyReference.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\MainWindow.baml
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\SettingTabs.baml
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\MainWindow.g.cs
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\SettingTabs.g.cs
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\App.g.cs
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector_MarkupCompile.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.g.resources
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.GeneratedMSBuildEditorConfig.editorconfig
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.AssemblyInfoInputs.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.AssemblyInfo.cs
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.csproj.CoreCompileInputs.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.sourcelink.json
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC .E5CFF504.Up2Date
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\refint\ColorIC Inspector.dll
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.pdb
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ColorIC Inspector.genruntimeconfig.cache
+D:\24. C# Study\7. ColorIC Inspector\ColorIC Inspector\obj\Debug\net8.0-windows\win-x64\ref\ColorIC Inspector.dll

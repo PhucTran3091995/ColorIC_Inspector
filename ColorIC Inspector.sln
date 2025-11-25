@@ -10,7 +10,9 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "components", "components", "{8D8267EE-28DF-4B2F-8FE3-BFD653BFC6C3}"
 	ProjectSection(SolutionItems) = preProject
 		CameraService.cs = CameraService.cs
+		Detection.cs = Detection.cs
 		SettingTabs.cs = SettingTabs.cs
+		YoloOnnxHelper.cs = YoloOnnxHelper.cs
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "store", "store", "{AEB706CA-28EC-4561-8D71-421CC2927BA5}"

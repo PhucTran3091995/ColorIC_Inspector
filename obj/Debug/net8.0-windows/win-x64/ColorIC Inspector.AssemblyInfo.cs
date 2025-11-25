@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ColorIC Inspector")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e35aabdad3e81bdf57664f6f306646804ab0dd49")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+92bd81fc34cbae79f95f91ce719e1fc277fa5b63")]
 [assembly: System.Reflection.AssemblyProductAttribute("ColorIC Inspector")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ColorIC Inspector")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

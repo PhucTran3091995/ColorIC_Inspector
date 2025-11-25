@@ -77,9 +77,9 @@
 
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="64*"/>
-            <ColumnDefinition Width="26*"/>
-            <ColumnDefinition Width="593*"/>
+            <ColumnDefinition Width="128*"/>
+            <ColumnDefinition Width="817*"/>
+            <ColumnDefinition Width="421*"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -155,8 +155,8 @@
                 <Border Grid.Row="0" Background="{StaticResource BgPanel}" CornerRadius="8" Padding="15" Margin="0,0,0,20" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
                     <StackPanel Orientation="Horizontal" Margin="-6,0,0,0">
                         <Image Source="/icons8-chip-32.png" Width="20" Height="20" Stretch="Uniform" OpacityMask="Black"/>
-                        <TextBlock Text="IC TYPE SELECTION:" Foreground="{StaticResource Accent}" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,20,0" Width="131" HorizontalAlignment="Right" Padding="10,0,10,0"/>
-                        <ComboBox x:Name="cbICTypes" Width="1129" DisplayMemberPath="Name" SelectionChanged="cbICTypes_SelectionChanged" FontWeight="Black" Foreground="#FF0E0E0E"/>
+                        <TextBlock Text="INSPECTION TYPE SELECTION:" Foreground="{StaticResource Accent}" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,20,0" Width="190" Padding="10,0,10,0"/>
+                        <ComboBox x:Name="cbICTypes" Width="789" DisplayMemberPath="Name" SelectionChanged="cbICTypes_SelectionChanged" FontWeight="Black" Foreground="#FF0E0E0E"/>
                     </StackPanel>
                 </Border>
 
@@ -177,7 +177,7 @@
                         Margin="0,0,20,0"
                         ClipToBounds="True">
                         <Grid>
-                                            <!-- Camera image -->
+                            <!-- Camera image -->
                             <Image x:Name="imgCameraFeed"
                                    Stretch="UniformToFill"
                                    HorizontalAlignment="Stretch"

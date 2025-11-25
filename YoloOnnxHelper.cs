@@ -7,6 +7,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 using YamlDotNet.RepresentationModel;
@@ -40,68 +41,79 @@ namespace ColorIC_Inspector.Services
         }
 
         // High-level: nhận BitmapSource (imgCameraFeed.Source) và trả về verdict + detections
-        public async Task<InferenceResult> AnalyzeAsync(BitmapSource bmpSource)
+        public Task<InferenceResult> AnalyzeAsync(BitmapSource bmpSource, CancellationToken cancellationToken = default)
         {
-            if (bmpSource == null) return new InferenceResult { Verdict = "OK", Detections = new List<Detection>() };
+            if (bmpSource == null || Session == null)
+            {
+                return Task.FromResult(new InferenceResult { Verdict = "OK", Detections = new List<Detection>() });
+            }
 
-            if (Session == null) return new InferenceResult { Verdict = "OK", Detections = new List<Detection>() };
+            // chạy nặng ở thread pool để không block UI
+            return Task.Run(() => AnalyzeInternal(bmpSource, cancellationToken), cancellationToken);
+        }
 
-            // Convert BitmapSource -> System.Drawing.Bitmap
+        private InferenceResult AnalyzeInternal(BitmapSource bmpSource, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
             using var bmp = BitmapFromBitmapSource(bmpSource);
-
-            // Preprocess -> tensor
             var input = PreprocessBitmap(bmp, InputWidth, InputHeight);
 
-            // Run inference (assume model takes one input)
-            IReadOnlyList<NamedOnnxValue> outputs;
             try
             {
-                using var container = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor("images", input) };
-                outputs = Session.Run(container).ToList();
+                var inputName = Session!.InputMetadata.Keys.First();
+                using var container = new List<NamedOnnxValue> { NamedOnnxValue.CreateFromTensor(inputName, input) };
+                using var results = Session.Run(container);
+                var outputs = results.ToList();
+
+                var (boxes, logits) = ExtractOutputs(outputs);
+                if (boxes == null || logits == null)
+                {
+                    return new InferenceResult
+                    {
+                        Verdict = "OK",
+                        Detections = new List<Detection>(),
+                        Error = "Unexpected model outputs."
+                    };
+                }
+
+                var dets = PostprocessOnnxOutputRFDETR(boxes, logits, bmp.Width, bmp.Height, ConfidenceThreshold);
+                dets = NonMaxSuppression(dets, NmsIouThreshold);
+                string verdict = dets.Any(d => d.Score >= ConfidenceThreshold) ? "NG" : "OK";
+
+                return new InferenceResult { Verdict = verdict, Detections = dets };
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                // Onnx run failed
                 return new InferenceResult { Verdict = "OK", Detections = new List<Detection>(), Error = ex.Message };
             }
+        }
 
-            // Try to find outputs: either named ("boxes","logits") or assume first two outputs
+        private (Tensor<float>? boxes, Tensor<float>? logits) ExtractOutputs(IReadOnlyList<NamedOnnxValue> outputs)
+        {
+            if (outputs.Count < 2) return (null, null);
+
             Tensor<float>? boxes = null;
             Tensor<float>? logits = null;
 
-            if (outputs.Count >= 2)
+            var b = outputs.FirstOrDefault(o => o.Name.ToLower().Contains("box") || o.Name.ToLower().Contains("bbox") || o.Name.ToLower().Contains("boxes"));
+            var l = outputs.FirstOrDefault(o => o.Name.ToLower().Contains("logit") || o.Name.ToLower().Contains("class") || o.Name.ToLower().Contains("scores"));
+            if (b != null && l != null)
             {
-                // try by name first
-                var b = outputs.FirstOrDefault(o => o.Name.ToLower().Contains("box") || o.Name.ToLower().Contains("bbox") || o.Name.ToLower().Contains("boxes"));
-                var l = outputs.FirstOrDefault(o => o.Name.ToLower().Contains("logit") || o.Name.ToLower().Contains("class") || o.Name.ToLower().Contains("scores"));
-                if (b != null && l != null)
-                {
-                    boxes = b.AsTensor<float>();
-                    logits = l.AsTensor<float>();
-                }
-                else
-                {
-                    // fallback to indexes
-                    boxes = outputs[0].AsTensor<float>();
-                    logits = outputs[1].AsTensor<float>();
-                }
+                boxes = b.AsTensor<float>();
+                logits = l.AsTensor<float>();
             }
             else
             {
-                // unsupported model output
-                return new InferenceResult { Verdict = "OK", Detections = new List<Detection>(), Error = "Unexpected model outputs." };
+                boxes = outputs[0].AsTensor<float>();
+                logits = outputs[1].AsTensor<float>();
             }
 
-            // Postprocess -> detections in original pixel coordinates
-            var dets = PostprocessOnnxOutputRFDETR(boxes, logits, bmp.Width, bmp.Height, ConfidenceThreshold);
-
-            // Apply NMS
-            dets = NonMaxSuppression(dets, NmsIouThreshold);
-
-            // Decide OK/NG: custom rule — if any detection >= threshold => NG
-            string verdict = dets.Any(d => d.Score >= ConfidenceThreshold) ? "NG" : "OK";
-
-            return new InferenceResult { Verdict = verdict, Detections = dets };
+            return (boxes, logits);
         }
 
         // Convert BitmapSource to System.Drawing.Bitmap (BMP stream)

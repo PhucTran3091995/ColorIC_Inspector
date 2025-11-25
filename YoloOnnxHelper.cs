@@ -21,6 +21,8 @@ namespace ColorIC_Inspector.components
     {
         public InferenceSession? Session { get; private set; }
         public List<string> ClassNames { get; private set; } = new List<string>();
+        private readonly System.Threading.ReaderWriterLockSlim _sessionLock = new System.Threading.ReaderWriterLockSlim();
+        private bool _disposed;
 
         public int InputWidth { get; private set; }
         public int InputHeight { get; private set; }
@@ -41,69 +43,116 @@ namespace ColorIC_Inspector.components
                 Session = new InferenceSession(modelPath);
 
                 // Try to read model input spatial dims (common layout: [N,C,H,W])
-                var firstInput = Session.InputMetadata.FirstOrDefault();
-                if (!string.IsNullOrEmpty(firstInput.Key))
-                {
-                    var dims = firstInput.Value.Dimensions;
-                    if (dims.Length >= 4)
-                    {
-                        // take last two dims as H,W (works for [N,C,H,W] or [N,H,W,C] -> best-effort)
-                        int h = dims[dims.Length - 2];
-                        int w = dims[dims.Length - 1];
-                        if (h > 0 && w > 0)
-                        {
-                            InputWidth = w;
-                            InputHeight = h;
-                        }
-                    }
-                }
+                TryPopulateInputShapeFromModel();
             }
 
             if (!string.IsNullOrEmpty(yamlPath) && File.Exists(yamlPath))
                 ClassNames = ReadNamesFromYaml(yamlPath);
         }
+        private void TryPopulateInputShapeFromModel()
+        {
+            var firstInput = Session!.InputMetadata.FirstOrDefault();
+            if (string.IsNullOrEmpty(firstInput.Key)) return;
+
+            var dims = firstInput.Value.Dimensions;
+            if (dims == null || dims.Length < 4) return;
+
+            int h = Math.Max(dims[dims.Length - 2], 1);
+            int w = Math.Max(dims[dims.Length - 1], 1);
+
+            // Some models expose dynamic dims (-1). Only override when positive.
+            if (h > 0 && w > 0)
+            {
+                InputWidth = w;
+                InputHeight = h;
+            }
+        }
 
         // High-level: nhận BitmapSource (imgCameraFeed.Source) và trả về verdict + detections
-        public Task<InferenceResult> AnalyzeAsync(BitmapSource bmpSource, CancellationToken cancellationToken = default)
+        public Task<InferenceResult> AnalyzeAsync(
+            BitmapSource bmpSource,
+            CancellationToken cancellationToken = default)
         {
-            if (bmpSource == null || Session == null)
+            if (bmpSource == null)
             {
-                return Task.FromResult(new InferenceResult { Verdict = "OK", Detections = new List<Detection>() });
+                return Task.FromResult(new InferenceResult
+                {
+                    Verdict = "OK",
+                    Detections = new List<Detection>()
+                });
             }
 
+            // Nếu object đã dispose, không cho chạy nữa
+            if (_disposed)
+            {
+                return Task.FromResult(new InferenceResult
+                {
+                    Verdict = "OK",
+                    Detections = new List<Detection>(),
+                    Error = "YoloOnnxHelper has been disposed."
+                });
+            }
+
+            // RẤT QUAN TRỌNG: Clone + Freeze để dùng được trên background thread
+            var clone = bmpSource.Clone();
+            clone.Freeze();
+
             // chạy nặng ở thread pool để không block UI
-            return Task.Run(() => AnalyzeInternal(bmpSource, cancellationToken), cancellationToken);
+            return Task.Run(() => AnalyzeInternal(clone, cancellationToken), cancellationToken);
         }
+
         // --- NEW AnalyzeInternal snippet (adapted to YOLOv12 single-output format) ---
-        private InferenceResult AnalyzeInternal(BitmapSource bmpSource, CancellationToken cancellationToken)
+        private InferenceResult AnalyzeInternal(
+    BitmapSource bmpSource,
+    CancellationToken cancellationToken)
         {
+            _sessionLock.EnterReadLock();
             try
             {
+                // Nếu đã dispose hoặc Session null thì không chạy gì nữa
+                if (_disposed || Session == null)
+                {
+                    return new InferenceResult
+                    {
+                        Verdict = "OK",
+                        Detections = new List<Detection>(),
+                        Error = "Session is null or disposed."
+                    };
+                }
+
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Convert BitmapSource -> System.Drawing.Bitmap and preprocess
+                // Convert BitmapSource -> Bitmap
                 using var bmp = BitmapFromBitmapSource(bmpSource);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var input = PreprocessBitmap(bmp, InputWidth, InputHeight);
+                var input = PreprocessBitmap(
+                    bmp, InputWidth, InputHeight,
+                    out float ratio, out float padX, out float padY);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Prepare ONNX input and run
-                var inputName = Session!.InputMetadata.Keys.First();
+                var inputName = Session.InputMetadata.Keys.First();
+
+                // đảm bảo NamedOnnxValue được dispose đúng cách
                 var named = NamedOnnxValue.CreateFromTensor(inputName, input);
+                // chạy inference
                 using var results = Session.Run(new[] { named });
 
-                // YOLOv12-style: single output tensor [1, features, boxes]
                 var output = results.First().AsTensor<float>();
 
-                // Postprocess using YOLOv12 decoding (single-output)
-                var dets = PostprocessOnnxOutput(output, bmp.Width, bmp.Height, InputWidth, ConfidenceThreshold);
+                var dets = PostprocessOnnxOutput(
+                    output, bmp.Width, bmp.Height,
+                    InputWidth, InputHeight, ratio, padX, padY, ConfidenceThreshold);
 
-                // Apply NMS and verdict logic
                 dets = NonMaxSuppression(dets, NmsIouThreshold);
+
                 string verdict = dets.Any(d => d.Score >= ConfidenceThreshold) ? "NG" : "OK";
 
-                return new InferenceResult { Verdict = verdict, Detections = dets };
+                return new InferenceResult
+                {
+                    Verdict = verdict,
+                    Detections = dets
+                };
             }
             catch (OperationCanceledException)
             {
@@ -118,30 +167,13 @@ namespace ColorIC_Inspector.components
                     Error = ex.Message
                 };
             }
+            finally
+            {
+                _sessionLock.ExitReadLock();
+            }
         }
+
         // --- Updated method: declare locals before assignment ---
-        private (Tensor<float>? boxes, Tensor<float>? logits) ExtractOutputs(IReadOnlyList<NamedOnnxValue> outputs)
-        {
-            if (outputs.Count < 2) return (null, null);
-
-            Tensor<float>? boxes = null;
-            Tensor<float>? logits = null;
-
-            var b = outputs.FirstOrDefault(o => o.Name.ToLower().Contains("box") || o.Name.ToLower().Contains("bbox") || o.Name.ToLower().Contains("boxes"));
-            var l = outputs.FirstOrDefault(o => o.Name.ToLower().Contains("logit") || o.Name.ToLower().Contains("class") || o.Name.ToLower().Contains("scores"));
-            if (b != null && l != null)
-            {
-                boxes = b.AsTensor<float>();
-                logits = l.AsTensor<float>();
-            }
-            else
-            {
-                boxes = outputs[0].AsTensor<float>();
-                logits = outputs[1].AsTensor<float>();
-            }
-            return (boxes, logits);
-        }
-
         // Convert BitmapSource to System.Drawing.Bitmap (BMP stream)
         private Bitmap BitmapFromBitmapSource(BitmapSource source)
         {
@@ -150,14 +182,15 @@ namespace ColorIC_Inspector.components
             encoder.Frames.Add(BitmapFrame.Create(source));
             encoder.Save(ms);
             ms.Seek(0, SeekOrigin.Begin);
-            var tmp = new Bitmap(ms);
-            // clone to decouple from stream lifetime
-            return new Bitmap(tmp);
+
+            using var tmp = new Bitmap(ms);
+            return new Bitmap(tmp); // clone để tách khỏi stream
         }
+
 
         // Preprocess (kept similar to original): resize with letterbox, bilinear sampling, output tensor [1,3,H,W]
         // Changed: replace unsafe PreprocessBitmap with safe Marshal.Copy-based implementation to avoid pointer issues
-        private DenseTensor<float> PreprocessBitmap(Bitmap bitmap, int targetWidth, int targetHeight)
+        private DenseTensor<float> PreprocessBitmap(Bitmap bitmap, int targetWidth, int targetHeight, out float ratio, out float padX, out float padY)
         {
             Bitmap srcBmp = bitmap;
             if (bitmap.PixelFormat != PixelFormat.Format24bppRgb)
@@ -167,11 +200,11 @@ namespace ColorIC_Inspector.components
                     g.DrawImage(bitmap, 0, 0, bitmap.Width, bitmap.Height);
             }
 
-            float ratio = Math.Min((float)targetWidth / srcBmp.Width, (float)targetHeight / srcBmp.Height);
+            ratio = Math.Min((float)targetWidth / srcBmp.Width, (float)targetHeight / srcBmp.Height);
             int newWidth = (int)(srcBmp.Width * ratio);
             int newHeight = (int)(srcBmp.Height * ratio);
-            int padX = (targetWidth - newWidth) / 2;
-            int padY = (targetHeight - newHeight) / 2;
+            padX = (targetWidth - newWidth) / 2;
+            padY = (targetHeight - newHeight) / 2;
 
             var input = new DenseTensor<float>(new[] { 1, 3, targetHeight, targetWidth });
 
@@ -245,13 +278,7 @@ namespace ColorIC_Inspector.components
 
             return input;
         }
-
-        // Postprocess assuming boxes [1,N,4] (cx,cy,w,h normalized) and logits [1,N,C]
-        // --- NEW: Postprocess method for YOLOv12 single-output tensor ---
-        // output tensor expected shape: [1, features, num_boxes]
-        // feature layout per box (example): [cx, cy, w, h, conf, ...class_probs...] or [cx,cy,w,h,conf] depending on model.
-        // This implementation expects at least 5 features (cx,cy,w,h,conf) and optional class logits after.
-        private List<Detection> PostprocessOnnxOutput(Tensor<float> output, int origWidth, int origHeight, int inputSize, float confThreshold)
+        private List<Detection> PostprocessOnnxOutput(Tensor<float> output, int origWidth, int origHeight, int inputWidth, int inputHeight, float ratio, float padX, float padY, float confThreshold)
         {
             var dets = new List<Detection>();
             if (output == null) return dets;
@@ -274,9 +301,12 @@ namespace ColorIC_Inspector.components
             }
 
             // Compute ratio/pad used in preprocessing (letterbox)
-            float ratio = Math.Min((float)inputSize / origWidth, (float)inputSize / origHeight);
-            float padX = (inputSize - origWidth * ratio) / 2f;
-            float padY = (inputSize - origHeight * ratio) / 2f;
+            if (ratio <= 0f)
+            {
+                ratio = Math.Min((float)inputWidth / origWidth, (float)inputHeight / origHeight);
+                padX = (inputWidth - origWidth * ratio) / 2f;
+                padY = (inputHeight - origHeight * ratio) / 2f;
+            }
 
             for (int i = 0; i < numBoxes; i++)
             {
@@ -427,9 +457,25 @@ namespace ColorIC_Inspector.components
 
         public void Dispose()
         {
-            Session?.Dispose();
-            Session = null;
+            _sessionLock.EnterWriteLock();
+            try
+            {
+                if (_disposed)
+                    return;
+
+                Session?.Dispose();
+                Session = null;
+                _disposed = true;
+            }
+            finally
+            {
+                _sessionLock.ExitWriteLock();
+                // KHÔNG bắt buộc dispose _sessionLock ở đây,
+                // trừ khi bạn chắc chắn không ai dùng helper nữa.
+                // _sessionLock.Dispose();
+            }
         }
+
     }
 
     // Simple result DTO

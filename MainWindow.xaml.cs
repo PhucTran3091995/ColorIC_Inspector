@@ -48,7 +48,20 @@ namespace ColorIC_Inspector
             _inspectionTimer = new DispatcherTimer();
             _inspectionTimer.Interval = TimeSpan.FromMilliseconds(500); // 2 sản phẩm/giây
             _inspectionTimer.Tick += InspectionTimer_Tick;
+
+            // Auto-load model khi app khởi tạo: tìm best.onnx + yaml trong folder ứng dụng
+            _yoloHelper = TryCreateYoloHelper();
+            if (_yoloHelper != null && _yoloHelper.Session != null)
+            {
+                AppendLog("Model", $"Loaded: best.onnx and YAML (Input {_yoloHelper.InputWidth}x{_yoloHelper.InputHeight})", true);
+            }
+            else
+            {
+                AppendLog("Model", "No model loaded (best.onnx / yaml missing)", false);
+            }
         }
+
+
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
@@ -349,23 +362,69 @@ namespace ColorIC_Inspector
 
         private YoloOnnxHelper? TryCreateYoloHelper()
         {
-            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-            var modelPath = Path.Combine(baseDir, "model.onnx");
-            var yamlPath = Path.Combine(baseDir, "data.yaml");
+            // Use app folder + prefer "best.onnx" and a yaml in the same folder.
+            string appFolder = AppDomain.CurrentDomain.BaseDirectory;
+
+            string modelFileName = "best.onnx";
+            string[] yamlCandidates = new[] { "data.yaml", "best.yaml", "data.yml" };
+
+            string modelFullPath = Path.Combine(appFolder, modelFileName);
+
+            // find yaml (try several names)
+            string yamlFullPath = yamlCandidates
+                .Select(n => Path.Combine(appFolder, n))
+                .FirstOrDefault(File.Exists) ?? string.Empty;
 
             try
             {
-                if (!File.Exists(modelPath) || !File.Exists(yamlPath))
+                if (!File.Exists(modelFullPath))
                 {
-                    AppendLog("Model", "Missing model.onnx or data.yaml", false);
+                    AppendLog("Model", $"Missing {modelFileName} in {appFolder}", false);
+
+                    // fallback to previous name if available
+                    var alt = Path.Combine(appFolder, "model.onnx");
+                    if (File.Exists(alt))
+                        modelFullPath = alt;
+                    else
+                    {
+                        // Notify user
+                        Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show($"Model file not found: {modelFileName}\nExpected folder: {appFolder}", "Model Load Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        });
+                        return null;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(yamlFullPath))
+                {
+                    AppendLog("Model", $"Missing yaml (data.yaml / best.yaml / data.yml) in {appFolder}", false);
+                    Dispatcher.Invoke(() =>
+                    {
+                        MessageBox.Show($"YAML file not found (data.yaml / best.yaml / data.yml) in:\n{appFolder}", "Model Load Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    });
                     return null;
                 }
 
-                return new YoloOnnxHelper(modelPath, yamlPath);
+                // Try create helper
+                var helper = new YoloOnnxHelper(modelFullPath, yamlFullPath);
+
+                // Notify success to user and log
+                AppendLog("Model", $"Loaded model: {Path.GetFileName(modelFullPath)}; YAML: {Path.GetFileName(yamlFullPath)}", true);
+                Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show($"Loaded model:\n{modelFullPath}\n\nYAML:\n{yamlFullPath}", "Model Loaded", MessageBoxButton.OK, MessageBoxImage.Information);
+                });
+
+                return helper;
             }
             catch (Exception ex)
             {
                 AppendLog("Model", ex.Message, false);
+                Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show($"Failed to load model or yaml:\n{ex.Message}", "Model Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                });
                 return null;
             }
         }

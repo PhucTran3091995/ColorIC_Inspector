@@ -187,11 +187,15 @@
 
                             <!-- Overlay rectangle (positioned) -->
                             <Rectangle Stroke="#EAB308"
-                                       StrokeThickness="2"
-                                       StrokeDashArray="4 2"
-                                       Opacity="0.6"
-                                       Margin="163,108,154,55"
-                                       IsHitTestVisible="False"/>
+                               StrokeThickness="2"
+                               StrokeDashArray="4 2"
+                               Opacity="0.6"
+                               Width="640"
+                               Height="410"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Top"
+                               Margin="0,36,0,0"
+                               IsHitTestVisible="False"/>
 
                             <!-- Status Overlay (hidden by default) -->
                             <Border Background="#2563EB"

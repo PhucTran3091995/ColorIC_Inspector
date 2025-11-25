@@ -4,7 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using ColorIC_Inspector.Services;
+using ColorIC_Inspector.components;
 using System;
 using System.IO;
 using System.Threading;
@@ -15,7 +15,7 @@ namespace ColorIC_Inspector
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private readonly CameraService _cameraService;
-        private readonly YoloOnnxHelper? _yoloHelper;
+        private YoloOnnxHelper? _yoloHelper;
         private readonly CancellationTokenSource _inferenceCts = new();
         private DispatcherTimer _inspectionTimer;
         private WriteableBitmap? _writeableBitmap;
@@ -54,6 +54,7 @@ namespace ColorIC_Inspector
         {
             // Tự động start camera khi mở app (tùy chọn)
             // btnStart_Click(null, null); 
+            EnsureYoloHelper();
         }
 
         private void Window_Closing(object sender, CancelEventArgs e)
@@ -241,43 +242,57 @@ namespace ColorIC_Inspector
             var frame = _latestFrame;
             if (frame == null)
             {
-                {
-                    UpdateStatus("WAITING", null);
-                    return;
-                }
-                if (_yoloHelper?.Session == null)
-                {
-                    UpdateStatus("NO MODEL", null);
-                    return;
-                }
-
-                try
-                {
-                    _isAnalyzing = true;
-                    var result = await _yoloHelper.AnalyzeAsync(frame, _inferenceCts.Token);
-
-                    if (!string.IsNullOrWhiteSpace(result.Error))
-                    {
-                        UpdateStatus("ERROR", false);
-                        AppendLog("Inference", result.Error!, false);
-                        return;
-                    }
-
-                    bool isOk = string.Equals(result.Verdict, "OK", StringComparison.OrdinalIgnoreCase);
-                    UpdateStatus(result.Verdict, isOk);
-
-                    string icName = (cbICTypes.SelectedItem as ICType)?.Name ?? "Unknown";
-                    string detail = result.Detections.Count > 0 ? $"{result.Detections.Count} detection(s)" : "No detections";
-                    AppendLog(icName, detail, isOk);
-                }
-                catch (OperationCanceledException)
-                {
-                }
-                finally
-                {
-                    _isAnalyzing = false;
-                }
+                UpdateStatus("WAITING", null);
+                return;
             }
+
+            EnsureYoloHelper();
+            if (_yoloHelper?.Session == null)
+            {
+                UpdateStatus("NO MODEL", null);
+                return;
+            }
+
+            try
+            {
+                _isAnalyzing = true;
+                var result = await _yoloHelper.AnalyzeAsync(frame, _inferenceCts.Token);
+                if (!string.IsNullOrWhiteSpace(result.Error))
+                {
+                    UpdateStatus("ERROR", false);
+                    AppendLog("Inference", result.Error!, false);
+                    return;
+                }
+                bool isOk = string.Equals(result.Verdict, "OK", StringComparison.OrdinalIgnoreCase);
+                UpdateStatus(result.Verdict, isOk);
+
+                string icName = (cbICTypes.SelectedItem as ICType)?.Name ?? "Unknown";
+                string detail = result.Detections.Count > 0 ? $"{result.Detections.Count} detection(s)" : "No detections";
+                AppendLog(icName, detail, isOk);
+            }
+            catch (OperationCanceledException)
+            {
+            }
+            finally
+            {
+                _isAnalyzing = false;
+            }
+        }
+        private void EnsureYoloHelper()
+        {
+            if (_yoloHelper?.Session != null)
+            {
+                return;
+            }
+
+            _yoloHelper = TryCreateYoloHelper();
+        }
+
+        public void ReloadYoloModel()
+        {
+            _yoloHelper?.Dispose();
+            _yoloHelper = null;
+            EnsureYoloHelper();
         }
         private void cbICTypes_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

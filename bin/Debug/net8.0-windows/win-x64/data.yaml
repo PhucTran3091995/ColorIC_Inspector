@@ -1,0 +1,8 @@
+train: D:\29. Training Yolo\FluxDetection.v9i.coco\train
+val: D:\29. Training Yolo\FluxDetection.v9i.coco\valid
+
+
+
+
+nc: 1
+names: ['Flux']

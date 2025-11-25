@@ -2,6 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.IO;
 
 namespace ColorIC_Inspector
 {
@@ -71,7 +72,41 @@ namespace ColorIC_Inspector
 
         private void btnSave_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Configuration Saved Successfully!", "System", MessageBoxButton.OK, MessageBoxImage.Information);
+            try
+            {
+                var modelPath = txtModelPath.Text;
+                var yamlPath = txtYamlPath.Text;
+
+                if (string.IsNullOrWhiteSpace(modelPath) || !File.Exists(modelPath))
+                {
+                    MessageBox.Show("Vui lòng chọn file model (.onnx) hợp lệ.", "Thiếu file", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(yamlPath) || !File.Exists(yamlPath))
+                {
+                    MessageBox.Show("Vui lòng chọn file cấu hình (.yaml) hợp lệ.", "Thiếu file", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var targetDir = AppDomain.CurrentDomain.BaseDirectory;
+                var targetModel = Path.Combine(targetDir, "model.onnx");
+                var targetYaml = Path.Combine(targetDir, "data.yaml");
+
+                File.Copy(modelPath, targetModel, overwrite: true);
+                File.Copy(yamlPath, targetYaml, overwrite: true);
+
+                MessageBox.Show("Lưu file YOLO thành công. Ứng dụng sẽ dùng model mới cho camera live.", "System", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                if (Window.GetWindow(this) is MainWindow mainWindow)
+                {
+                    mainWindow.ReloadYoloModel();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Không thể lưu cấu hình: {ex.Message}", "Lỗi", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

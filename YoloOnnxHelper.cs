@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using YamlDotNet.RepresentationModel;
 using static OpenCvSharp.FileStorage;
 
-namespace ColorIC_Inspector.Services
+namespace ColorIC_Inspector.components
 {
     // Helper để chạy inference ONNX từ BitmapSource (ví dụ imgCameraFeed.Source as BitmapSource).
     // Trả về Verdict "OK" hoặc "NG" cùng danh sách detections.
@@ -22,11 +22,13 @@ namespace ColorIC_Inspector.Services
         public InferenceSession? Session { get; private set; }
         public List<string> ClassNames { get; private set; } = new List<string>();
 
-        public int InputWidth { get; }
-        public int InputHeight { get; }
+        public int InputWidth { get; private set; }
+        public int InputHeight { get; private set; }
         public float ConfidenceThreshold { get; set; } = 0.25f;
         public float NmsIouThreshold { get; set; } = 0.45f;
 
+
+        // Changed: constructor reads model input shape (if available) and sets InputWidth/InputHeight
         public YoloOnnxHelper(string modelPath, string yamlPath, int inputWidth = 640, int inputHeight = 640, float confThreshold = 0.25f, float nmsIou = 0.45f)
         {
             InputWidth = inputWidth;
@@ -35,7 +37,27 @@ namespace ColorIC_Inspector.Services
             NmsIouThreshold = nmsIou;
 
             if (!string.IsNullOrEmpty(modelPath) && File.Exists(modelPath))
+            {
                 Session = new InferenceSession(modelPath);
+
+                // Try to read model input spatial dims (common layout: [N,C,H,W])
+                var firstInput = Session.InputMetadata.FirstOrDefault();
+                if (!string.IsNullOrEmpty(firstInput.Key))
+                {
+                    var dims = firstInput.Value.Dimensions;
+                    if (dims.Length >= 4)
+                    {
+                        // take last two dims as H,W (works for [N,C,H,W] or [N,H,W,C] -> best-effort)
+                        int h = dims[dims.Length - 2];
+                        int w = dims[dims.Length - 1];
+                        if (h > 0 && w > 0)
+                        {
+                            InputWidth = w;
+                            InputHeight = h;
+                        }
+                    }
+                }
+            }
 
             if (!string.IsNullOrEmpty(yamlPath) && File.Exists(yamlPath))
                 ClassNames = ReadNamesFromYaml(yamlPath);
@@ -52,6 +74,7 @@ namespace ColorIC_Inspector.Services
             // chạy nặng ở thread pool để không block UI
             return Task.Run(() => AnalyzeInternal(bmpSource, cancellationToken), cancellationToken);
         }
+        // --- NEW AnalyzeInternal snippet (adapted to YOLOv12 single-output format) ---
         private InferenceResult AnalyzeInternal(BitmapSource bmpSource, CancellationToken cancellationToken)
         {
             try
@@ -65,38 +88,26 @@ namespace ColorIC_Inspector.Services
                 var input = PreprocessBitmap(bmp, InputWidth, InputHeight);
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Prepare ONNX input
+                // Prepare ONNX input and run
                 var inputName = Session!.InputMetadata.Keys.First();
-
-                // Create single NamedOnnxValue (disposable) and run session
                 var named = NamedOnnxValue.CreateFromTensor(inputName, input);
                 using var results = Session.Run(new[] { named });
-                var outputs = results.ToList();
 
-                // Extract model outputs (boxes, logits)
-                var (boxes, logits) = ExtractOutputs(outputs);
-                if (boxes == null || logits == null)
-                {
-                    return new InferenceResult
-                    {
-                        Verdict = "OK",
-                        Detections = new List<Detection>(),
-                        Error = "Unexpected model outputs."
-                    };
-                }
+                // YOLOv12-style: single output tensor [1, features, boxes]
+                var output = results.First().AsTensor<float>();
 
-                // Postprocess to original image coordinates and apply NMS
-                var dets = PostprocessOnnxOutputRFDETR(boxes, logits, bmp.Width, bmp.Height, ConfidenceThreshold);
+                // Postprocess using YOLOv12 decoding (single-output)
+                var dets = PostprocessOnnxOutput(output, bmp.Width, bmp.Height, InputWidth, ConfidenceThreshold);
+
+                // Apply NMS and verdict logic
                 dets = NonMaxSuppression(dets, NmsIouThreshold);
-
-                // Decide verdict (custom rule: any detection above threshold -> NG)
                 string verdict = dets.Any(d => d.Score >= ConfidenceThreshold) ? "NG" : "OK";
 
                 return new InferenceResult { Verdict = verdict, Detections = dets };
             }
             catch (OperationCanceledException)
             {
-                throw; // preserve cancellation semantics to caller
+                throw;
             }
             catch (Exception ex)
             {
@@ -145,7 +156,8 @@ namespace ColorIC_Inspector.Services
         }
 
         // Preprocess (kept similar to original): resize with letterbox, bilinear sampling, output tensor [1,3,H,W]
-        private unsafe DenseTensor<float> PreprocessBitmap(Bitmap bitmap, int targetWidth, int targetHeight)
+        // Changed: replace unsafe PreprocessBitmap with safe Marshal.Copy-based implementation to avoid pointer issues
+        private DenseTensor<float> PreprocessBitmap(Bitmap bitmap, int targetWidth, int targetHeight)
         {
             Bitmap srcBmp = bitmap;
             if (bitmap.PixelFormat != PixelFormat.Format24bppRgb)
@@ -168,8 +180,10 @@ namespace ColorIC_Inspector.Services
 
             try
             {
-                byte* srcBase = (byte*)bmpData.Scan0;
-                int srcStride = bmpData.Stride;
+                int srcStride = Math.Abs(bmpData.Stride);
+                int srcLen = srcStride * srcBmp.Height;
+                byte[] src = new byte[srcLen];
+                System.Runtime.InteropServices.Marshal.Copy(bmpData.Scan0, src, 0, srcLen);
 
                 for (int y = 0; y < targetHeight; y++)
                 {
@@ -178,7 +192,7 @@ namespace ColorIC_Inspector.Services
                         float fx = (x - padX + 0.5f) / ratio - 0.5f;
                         float fy = (y - padY + 0.5f) / ratio - 0.5f;
 
-                        float r = 0, g = 0, b = 0;
+                        float r = 0f, g = 0f, b = 0f;
                         if (fx >= 0 && fx < srcBmp.Width - 1 && fy >= 0 && fy < srcBmp.Height - 1)
                         {
                             int x0 = (int)Math.Floor(fx);
@@ -188,17 +202,34 @@ namespace ColorIC_Inspector.Services
                             float dx = fx - x0;
                             float dy = fy - y0;
 
-                            byte* p00 = srcBase + y0 * srcStride + x0 * 3;
-                            byte* p10 = srcBase + y0 * srcStride + x1 * 3;
-                            byte* p01 = srcBase + y1 * srcStride + x0 * 3;
-                            byte* p11 = srcBase + y1 * srcStride + x1 * 3;
+                            int idx00 = y0 * srcStride + x0 * 3;
+                            int idx10 = y0 * srcStride + x1 * 3;
+                            int idx01 = y1 * srcStride + x0 * 3;
+                            int idx11 = y1 * srcStride + x1 * 3;
 
-                            b = (1 - dx) * (1 - dy) * p00[0] + dx * (1 - dy) * p10[0] + (1 - dx) * dy * p01[0] + dx * dy * p11[0];
-                            g = (1 - dx) * (1 - dy) * p00[1] + dx * (1 - dy) * p10[1] + (1 - dx) * dy * p01[1] + dx * dy * p11[1];
-                            r = (1 - dx) * (1 - dy) * p00[2] + dx * (1 - dy) * p10[2] + (1 - dx) * dy * p01[2] + dx * dy * p11[2];
+                            byte p00b = src[idx00 + 0];
+                            byte p00g = src[idx00 + 1];
+                            byte p00r = src[idx00 + 2];
 
-                            b /= 255.0f; g /= 255.0f; r /= 255.0f;
+                            byte p10b = src[idx10 + 0];
+                            byte p10g = src[idx10 + 1];
+                            byte p10r = src[idx10 + 2];
+
+                            byte p01b = src[idx01 + 0];
+                            byte p01g = src[idx01 + 1];
+                            byte p01r = src[idx01 + 2];
+
+                            byte p11b = src[idx11 + 0];
+                            byte p11g = src[idx11 + 1];
+                            byte p11r = src[idx11 + 2];
+
+                            b = (1 - dx) * (1 - dy) * p00b + dx * (1 - dy) * p10b + (1 - dx) * dy * p01b + dx * dy * p11b;
+                            g = (1 - dx) * (1 - dy) * p00g + dx * (1 - dy) * p10g + (1 - dx) * dy * p01g + dx * dy * p11g;
+                            r = (1 - dx) * (1 - dy) * p00r + dx * (1 - dy) * p10r + (1 - dx) * dy * p01r + dx * dy * p11r;
+
+                            b /= 255f; g /= 255f; r /= 255f;
                         }
+
                         input[0, 0, y, x] = r;
                         input[0, 1, y, x] = g;
                         input[0, 2, y, x] = b;
@@ -211,45 +242,104 @@ namespace ColorIC_Inspector.Services
                 if (!object.ReferenceEquals(srcBmp, bitmap))
                     srcBmp.Dispose();
             }
+
             return input;
         }
 
         // Postprocess assuming boxes [1,N,4] (cx,cy,w,h normalized) and logits [1,N,C]
-        private List<Detection> PostprocessOnnxOutputRFDETR(Tensor<float> boxes, Tensor<float> logits, int origWidth, int origHeight, float confThreshold)
+        // --- NEW: Postprocess method for YOLOv12 single-output tensor ---
+        // output tensor expected shape: [1, features, num_boxes]
+        // feature layout per box (example): [cx, cy, w, h, conf, ...class_probs...] or [cx,cy,w,h,conf] depending on model.
+        // This implementation expects at least 5 features (cx,cy,w,h,conf) and optional class logits after.
+        private List<Detection> PostprocessOnnxOutput(Tensor<float> output, int origWidth, int origHeight, int inputSize, float confThreshold)
         {
             var dets = new List<Detection>();
-            if (boxes == null || logits == null) return dets;
+            if (output == null) return dets;
 
-            int numQueries = boxes.Dimensions.Length >= 2 ? boxes.Dimensions[1] : 0;
+            int[] dims = output.Dimensions.ToArray();
+            // dims = [1, features, num_boxes] or [1, num_boxes, features] depending on model; handle common case [1, features, num_boxes]
+            if (dims.Length != 3 || dims[0] != 1) return dets;
 
-            int numClasses = logits.Dimensions.Length >= 3 ? logits.Dimensions[2] : logits.Dimensions[logits.Dimensions.Length - 1];
+            int features = dims[1];
+            int numBoxes = dims[2];
 
-            for (int i = 0; i < numQueries; i++)
+            // If model uses [1, num_boxes, features], detect and transpose logically
+            bool transposed = false;
+            if (features < 5 && dims[1] != 5 && dims[2] >= 5)
             {
-                float cx = boxes[0, i, 0];
-                float cy = boxes[0, i, 1];
-                float w = boxes[0, i, 2];
-                float h = boxes[0, i, 3];
+                // likely [1, num_boxes, features]
+                transposed = true;
+                features = dims[2];
+                numBoxes = dims[1];
+            }
 
-                float maxScore = float.MinValue;
-                int classId = -1;
-                for (int c = 0; c < numClasses; c++)
+            // Compute ratio/pad used in preprocessing (letterbox)
+            float ratio = Math.Min((float)inputSize / origWidth, (float)inputSize / origHeight);
+            float padX = (inputSize - origWidth * ratio) / 2f;
+            float padY = (inputSize - origHeight * ratio) / 2f;
+
+            for (int i = 0; i < numBoxes; i++)
+            {
+                float cx, cy, w, h, conf;
+                // read depending on layout
+                if (!transposed)
                 {
-                    float score = logits[0, i, c];
-                    if (score > maxScore)
+                    cx = output[0, 0, i];
+                    cy = output[0, 1, i];
+                    w = output[0, 2, i];
+                    h = output[0, 3, i];
+                    conf = output[0, 4, i];
+                }
+                else
+                {
+                    cx = output[0, i, 0];
+                    cy = output[0, i, 1];
+                    w = output[0, i, 2];
+                    h = output[0, i, 3];
+                    conf = output[0, i, 4];
+                }
+
+                if (conf < confThreshold) continue;
+
+                // If classes exist after conf, find class id with highest score
+                int classId = 0;
+                string? className = null;
+                float bestClassScore = 0f;
+                int classFeatureStart = 5;
+
+                if (!transposed)
+                {
+                    if (features > classFeatureStart)
                     {
-                        maxScore = score;
-                        classId = c;
+                        int classCount = features - classFeatureStart;
+                        for (int c = 0; c < classCount; c++)
+                        {
+                            float score = output[0, classFeatureStart + c, i];
+                            if (score > bestClassScore) { bestClassScore = score; classId = c; }
+                        }
+                    }
+                }
+                else
+                {
+                    if (features > classFeatureStart)
+                    {
+                        int classCount = features - classFeatureStart;
+                        for (int c = 0; c < classCount; c++)
+                        {
+                            float score = output[0, i, classFeatureStart + c];
+                            if (score > bestClassScore) { bestClassScore = score; classId = c; }
+                        }
                     }
                 }
 
-                float confidence = (float)(1.0 / (1.0 + Math.Exp(-maxScore)));
-                if (confidence < confThreshold) continue;
+                if (bestClassScore > 0 && ClassNames != null && classId >= 0 && classId < ClassNames.Count)
+                    className = ClassNames[classId];
 
-                float x1 = (cx - w / 2f) * origWidth;
-                float y1 = (cy - h / 2f) * origHeight;
-                float x2 = (cx + w / 2f) * origWidth;
-                float y2 = (cy + h / 2f) * origHeight;
+                // Convert from model coordinates (assumed in inputSize space, center-based) back to original image
+                float x1 = (cx - w / 2f - padX) / ratio;
+                float y1 = (cy - h / 2f - padY) / ratio;
+                float x2 = (cx + w / 2f - padX) / ratio;
+                float y2 = (cy + h / 2f - padY) / ratio;
 
                 dets.Add(new Detection
                 {
@@ -257,9 +347,9 @@ namespace ColorIC_Inspector.Services
                     Y1 = y1,
                     X2 = x2,
                     Y2 = y2,
-                    Score = confidence,
+                    Score = conf,
                     ClassId = classId,
-                    ClassName = (classId >= 0 && classId < ClassNames.Count) ? ClassNames[classId] : null
+                    ClassName = className
                 });
             }
 

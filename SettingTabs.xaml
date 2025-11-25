@@ -31,7 +31,7 @@
         </Grid>
 
         <!-- SETTINGS CONTENT -->
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Background="{DynamicResource BgPanel}">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" Background="{DynamicResource BgPanel}" Margin="0,22,0,-22">
             <StackPanel Margin="40" MaxWidth="900" HorizontalAlignment="Center">
                 <DockPanel Margin="0,0,0,30">
                     <Button Content="LOCK SYSTEM" DockPanel.Dock="Right" Background="{DynamicResource BorderColor}" Width="120" Click="btnLogout_Click"/>

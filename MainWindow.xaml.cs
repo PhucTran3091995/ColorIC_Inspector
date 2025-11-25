@@ -1,8 +1,12 @@
-﻿using System;
+﻿using ColorIC_Inspector.Services;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -11,12 +15,16 @@ namespace ColorIC_Inspector
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private readonly CameraService _cameraService;
+        private readonly YoloOnnxHelper? _yoloHelper;
+        private readonly CancellationTokenSource _inferenceCts = new();
         private DispatcherTimer _inspectionTimer;
         private WriteableBitmap? _writeableBitmap;
         private string _currentPixelFormatKey = string.Empty; // ví dụ "Mono8" hoặc "Bgr24"
         private byte[]? _pixelBuffer;                // reuse to avoid allocations
         private int _lastStride = 0;
         private int _debugSavedFrames = 0;
+        private BitmapSource? _latestFrame;
+        private bool _isAnalyzing;
 
         // Lazy-loaded settings control
         private SettingTabs? _settingTabsControl;
@@ -36,6 +44,12 @@ namespace ColorIC_Inspector
             _cameraService.StatusChanged += OnCameraStatusChanged;
             _cameraService.ErrorOccurred += OnCameraError;
 
+            lvLogs.ItemsSource = Logs;
+            cbICTypes.ItemsSource = ICTypes;
+            SeedDefaultICTypes();
+
+            _yoloHelper = TryCreateYoloHelper();
+
             // Timer cho logic kiểm tra sản phẩm (giả lập)
             _inspectionTimer = new DispatcherTimer();
             _inspectionTimer.Interval = TimeSpan.FromMilliseconds(500); // 2 sản phẩm/giây
@@ -51,6 +65,8 @@ namespace ColorIC_Inspector
         private void Window_Closing(object sender, CancelEventArgs e)
         {
             _cameraService.Dispose();
+            _inferenceCts.Cancel();
+            _yoloHelper?.Dispose();
         }
 
         // --- CAMERA HANDLERS ---
@@ -64,6 +80,8 @@ namespace ColorIC_Inspector
             {
                 try { bmp.Freeze(); } catch { /* ignore if already frozen or fails */ }
             }
+
+            _latestFrame = bmp;
 
             // Create a key to see if WriteableBitmap needs recreation
             string key = $"{bmp.PixelWidth}x{bmp.PixelHeight}_{bmp.Format}";
@@ -221,37 +239,55 @@ namespace ColorIC_Inspector
 
         // --- BUSINESS LOGIC (Giữ nguyên logic cũ của bạn) ---
 
-        private void InspectionTimer_Tick(object sender, EventArgs e)
+        private async void InspectionTimer_Tick(object sender, EventArgs e)
         {
-            // Logic giả lập kiểm tra OK/NG
-            var random = new Random();
-            bool isOk = random.NextDouble() > 0.3;
-            string result = isOk ? "OK" : "NG";
+            if (_isAnalyzing) return;
 
-            txtStatus.Text = result;
+            var frame = _latestFrame;
+            if (frame == null)
+            {
+                UpdateStatus("WAITING", null);
+                return;
+            }
+
+            if (_yoloHelper?.Session == null)
+            {
+                UpdateStatus("NO MODEL", null);
+                return;
+            }
+
             try
             {
-                txtStatus.Foreground = isOk ?
-                    (System.Windows.Media.Brush)FindResource("Success") :
-                    (System.Windows.Media.Brush)FindResource("Error");
-            }
-            catch { }
+                _isAnalyzing = true;
+                var result = await _yoloHelper.AnalyzeAsync(frame, _inferenceCts.Token);
 
-            // Thêm log
-            string icName = (cbICTypes.SelectedItem as ICType)?.Name ?? "Unknown";
-            Logs.Insert(0, new LogEntry
+                if (!string.IsNullOrWhiteSpace(result.Error))
+                {
+                    UpdateStatus("ERROR", false);
+                    AppendLog("Inference", result.Error!, false);
+                    return;
+                }
+
+                bool isOk = string.Equals(result.Verdict, "OK", StringComparison.OrdinalIgnoreCase);
+                UpdateStatus(result.Verdict, isOk);
+
+                string icName = (cbICTypes.SelectedItem as ICType)?.Name ?? "Unknown";
+                string detail = result.Detections.Count > 0 ? $"{result.Detections.Count} detection(s)" : "No detections";
+                AppendLog(icName, detail, isOk);
+            }
+            catch (OperationCanceledException)
             {
-                Timestamp = DateTime.Now.ToString("HH:mm:ss"),
-                ICName = icName,
-                Result = result
-            });
+            }
+            finally
+            {
+                _isAnalyzing = false;
+            }
         }
         private void cbICTypes_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            var selectedItem = cbICTypes.SelectedItem;
-            if (selectedItem != null)
+            if (cbICTypes.SelectedItem is ICType selected)
             {
-                txtStatus.Text = $"Selected: {selectedItem}";
+                AppendLog("Selection", $"Selected {selected.Name}", null);
             }
         }
         private void btnClearLogs_Click(object sender, RoutedEventArgs e)
@@ -291,6 +327,65 @@ namespace ColorIC_Inspector
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        private void SeedDefaultICTypes()
+        {
+            if (ICTypes.Count > 0) return;
+
+            ICTypes.Add(new ICType { Name = "IC-74HC00", Count = 1, Color = "Black" });
+            ICTypes.Add(new ICType { Name = "IC-LM358", Count = 2, Color = "DarkGrey" });
+        }
+
+        private YoloOnnxHelper? TryCreateYoloHelper()
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var modelPath = Path.Combine(baseDir, "model.onnx");
+            var yamlPath = Path.Combine(baseDir, "data.yaml");
+
+            try
+            {
+                if (!File.Exists(modelPath) || !File.Exists(yamlPath))
+                {
+                    AppendLog("Model", "Missing model.onnx or data.yaml", false);
+                    return null;
+                }
+
+                return new YoloOnnxHelper(modelPath, yamlPath);
+            }
+            catch (Exception ex)
+            {
+                AppendLog("Model", ex.Message, false);
+                return null;
+            }
+        }
+
+        private void UpdateStatus(string result, bool? isOk)
+        {
+            txtStatus.Text = result;
+            if (!isOk.HasValue) return;
+
+            try
+            {
+                txtStatus.Foreground = isOk.Value
+                    ? (Brush)FindResource("Success")
+                    : (Brush)FindResource("Error");
+            }
+            catch
+            {
+            }
+        }
+
+        private void AppendLog(string icName, string resultDetail, bool? isOk)
+        {
+            string verdict = isOk.HasValue ? (isOk.Value ? "OK" : "NG") : resultDetail;
+
+            Logs.Insert(0, new LogEntry
+            {
+                Timestamp = DateTime.Now.ToString("HH:mm:ss"),
+                ICName = string.IsNullOrWhiteSpace(resultDetail) ? icName : $"{icName} - {resultDetail}",
+                Result = verdict
+            });
+        }
     }
 
     public class LogEntry

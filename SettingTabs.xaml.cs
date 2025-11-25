@@ -43,7 +43,7 @@ namespace ColorIC_Inspector
         private void btnBrowseModel_Click(object sender, RoutedEventArgs e)
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
-            dialog.Filter = "YOLO Model (*.pt)|*.pt";
+            dialog.Filter = "YOLO ONNX Model (*.onnx)|*.onnx";
             if (dialog.ShowDialog() == true) txtModelPath.Text = dialog.FileName;
         }
 
